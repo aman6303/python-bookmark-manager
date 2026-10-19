@@ -1,0 +1,15 @@
+README.md
+pyproject.toml
+src/bookmark_manager.egg-info/PKG-INFO
+src/bookmark_manager.egg-info/SOURCES.txt
+src/bookmark_manager.egg-info/dependency_links.txt
+src/bookmark_manager.egg-info/entry_points.txt
+src/bookmark_manager.egg-info/top_level.txt
+src/bookmarks/__init__.py
+src/bookmarks/config.py
+src/bookmarks/database.py
+src/bookmarks/main.py
+src/bookmarks/models.py
+src/bookmarks/services/__init__.py
+src/bookmarks/services/bookmark_service.py
+tests/test_bookmarks.py
