@@ -10,7 +10,7 @@ from bookmarks.models import Bookmark
 
 def init_db() -> None:
     with get_connection() as conn:
-        conn.execute(
+        conn.execute(        # we can directly use conn to execute SQL commands without needing a separate cursor object
             """
             CREATE TABLE IF NOT EXISTS bookmarks (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -24,7 +24,7 @@ def init_db() -> None:
         )
         conn.commit()
 
-
+# this is context manager that will handle the connection to the database and ensure it is closed after use
 @contextmanager
 def get_connection():
     conn = sqlite3.connect(DB_PATH)
@@ -42,6 +42,10 @@ def add_bookmark(title: str, url: str, tags: str = "", category: str = "", descr
             (title, url, tags, category, description),
         )
         conn.commit()
+
+        if cursor.lastrowid is None:
+            raise RuntimeError("Database insert failed to generate a row ID.")
+          
         return cursor.lastrowid
 
 
@@ -66,7 +70,7 @@ def search_bookmarks(query: str) -> List[Bookmark]:
             WHERE title LIKE ? OR url LIKE ? OR tags LIKE ? OR category LIKE ? OR description LIKE ?
             ORDER BY title
             """,
-            (q, q, q, q, q),
+            (q, q, q, q, q), # searching query in all fields
         ).fetchall()
         return [_row_to_bookmark(r) for r in rows]
 
