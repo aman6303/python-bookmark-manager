@@ -1,7 +1,7 @@
 """Bookmark business logic."""
 
 import webbrowser
-from typing import List, Optional
+from typing import List
 
 from bookmarks.database import (
     add_bookmark as db_add,
@@ -24,10 +24,6 @@ def list_bookmarks() -> List[Bookmark]:
 
 def find_bookmarks(query: str) -> List[Bookmark]:
     return db_search(query)
-
-
-def get_bookmark(bookmark_id: int) -> Optional[Bookmark]:
-    return get_bookmark_by_id(bookmark_id)
 
 
 def open_bookmark(bookmark_id: int) -> bool:

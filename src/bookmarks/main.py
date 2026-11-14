@@ -1,37 +1,122 @@
 """CLI for the Bookmark Manager."""
 
 import argparse
+import sys
+from typing import List, NoReturn, Optional, Tuple
 
 from bookmarks.database import init_db
 from bookmarks.services.bookmark_service import (
     create_bookmark,
     find_bookmarks,
-    get_bookmark,
     list_bookmarks,
     open_bookmark,
     remove_bookmark,
 )
 
 
-def print_detailed_commands() -> None:
-    print("Local Bookmark Manager – Available Commands\n")
-    print("Usage: python -m bookmarks.main <command> [arguments]\n")
-    print("Commands:")
-    print("  add TITLE URL [--tags TAGS] [--category CAT] [--desc TEXT]")
-    print("      Add a new bookmark\n")
-    print("  list")
-    print("      List all bookmarks\n")
-    print("  open ID")
-    print("      Open bookmark in default browser\n")
-    print("  search QUERY")
-    print("      Search bookmarks\n")
-    print("  delete ID")
-    print("      Delete a bookmark\n")
-    print("  commands")
-    print("      Show this detailed list\n")
-    print("  menu")
-    print("      Start interactive menu\n")
+class HelpfulArgumentParser(argparse.ArgumentParser):
+    """ArgumentParser that outputs full help when an argument error occurs."""
 
+    def error(self, message: str) -> NoReturn:
+        self.print_help(sys.stderr)               # 1. Print full instructions first!
+        sys.stderr.write(f"\nError: {message}\n") # 2. Print the error at the bottom
+        sys.exit(2)                               # 3. Stop the program
+
+
+def preprocess_args(args: List[str]) -> List[str]:
+    """Normalize command-line arguments to support flexible help syntax.
+
+    Supports:
+    - '-h <command>', '--help <command>', '-help <command>' -> ['help', '<command>']
+    - '-help' -> '--help'
+    - '<command> -help' -> ['<command>', '--help']
+    """
+    if not args:
+        return args
+
+    # If the user typed '-help add' or '-h add', change it to 'help add'
+    if len(args) >= 2 and args[0] in ("-h", "--help", "-help"):
+        return ["help", args[1]]
+    
+    # If the user typed a single '-help', make it standard '--help'
+    return ["--help" if a == "-help" else a for a in args]
+
+
+def build_parser() -> Tuple[HelpfulArgumentParser, argparse._SubParsersAction]:
+    """Build and configure the CLI argument parser with subparsers."""
+    parser = HelpfulArgumentParser(
+        prog="bookmarks",
+        description="Local Bookmark Manager - Save, tag, search, and manage your bookmarks.",
+    )
+    subparsers = parser.add_subparsers(
+        dest="command",
+        help="Commands",
+        parser_class=HelpfulArgumentParser,
+    )
+
+    # add command
+    add_p = subparsers.add_parser(
+        "add",
+        help="Add a new bookmark",
+        description="Add a new bookmark to your collection.",
+    )
+    add_p.add_argument("title", help="Bookmark title")
+    add_p.add_argument("url", help="URL of the bookmark")
+    add_p.add_argument("--tags", default="", help="Comma-separated tags (optional)")
+    add_p.add_argument("--category", default="", help="Bookmark category (optional)")
+    add_p.add_argument("--desc", default="", help="Bookmark description (optional)")
+
+    # list command
+    subparsers.add_parser(
+        "list",
+        help="List all bookmarks",
+        description="List all saved bookmarks sorted alphabetically by title.",
+    )
+
+    # open command
+    open_p = subparsers.add_parser(
+        "open",
+        help="Open bookmark in browser",
+        description="Open a bookmark in your default web browser by its ID.",
+    )
+    open_p.add_argument("id", type=int, help="Bookmark ID to open")
+
+    # search command
+    search_p = subparsers.add_parser(
+        "search",
+        help="Search bookmarks",
+        description="Search bookmarks by title, URL, tags, category, or description.",
+    )
+    search_p.add_argument("query", help="Search keyword or term")
+
+    # delete command
+    del_p = subparsers.add_parser(
+        "delete",
+        help="Delete a bookmark",
+        description="Delete a bookmark from the database by its ID.",
+    )
+    del_p.add_argument("id", type=int, help="Bookmark ID to delete")
+
+    # menu command
+    subparsers.add_parser(
+        "menu",
+        help="Start interactive menu",
+        description="Start the interactive menu mode.",
+    )
+
+    # help command
+    help_p = subparsers.add_parser(
+        "help",
+        help="Show help for a command",
+        description="Show general help or detailed help for a specific command.",
+    )
+    help_p.add_argument(
+        "subcommand",
+        nargs="?",
+        help="Command to get help for (e.g. add, delete, list, open, search)",
+    )
+
+    return parser, subparsers
 
 def interactive_menu() -> None:
     print("\n=== Local Bookmark Manager ===")
@@ -43,7 +128,6 @@ def interactive_menu() -> None:
         print("3. Open bookmark")
         print("4. Search bookmarks")
         print("5. Delete bookmark")
-        print("6. Show all commands")
         print("q. Quit")
         choice = input("\nChoose an option: ").strip().lower()
 
@@ -64,7 +148,7 @@ def interactive_menu() -> None:
             if not bookmarks:
                 print("No bookmarks yet.\n")
             else:
-                print(f"\n{'ID':<5} {'Title':<30} {'Category':<15} URL")
+                print(f"\n{'ID':5} {'Title':<30} {'Category':<15} URL")
                 print("-" * 80)
                 for bm in bookmarks:
                     print(f"{bm.id:<5} {bm.title:<30} {bm.category:<15} {bm.url}")
@@ -101,10 +185,6 @@ def interactive_menu() -> None:
             except ValueError:
                 print("Invalid ID.\n")
 
-        elif choice == "6":
-            print_detailed_commands()
-            print()
-
         elif choice in ("q", "quit", "exit"):
             print("Goodbye!")
             break
@@ -112,45 +192,34 @@ def interactive_menu() -> None:
             print("Invalid option.\n")
 
 
-def main() -> None:
+def main(argv: Optional[List[str]] = None) -> None:
     init_db()
 
-    parser = argparse.ArgumentParser(description="Local Bookmark Manager (stdlib only)")
-    subparsers = parser.add_subparsers(dest="command", help="Commands")
+    parser, subparsers = build_parser()
 
-    add_p = subparsers.add_parser("add", help="Add a new bookmark")
-    add_p.add_argument("title", help="Bookmark title")
-    add_p.add_argument("url", help="URL")
-    add_p.add_argument("--tags", default="", help="Comma-separated tags")
-    add_p.add_argument("--category", default="", help="Category")
-    add_p.add_argument("--desc", default="", help="Description")
+    if argv is None:
+        argv = sys.argv[1:]
 
-    subparsers.add_parser("list", help="List all bookmarks")
+    processed_argv = preprocess_args(argv)
+    args = parser.parse_args(processed_argv)
 
-    open_p = subparsers.add_parser("open", help="Open bookmark in browser")
-    open_p.add_argument("id", type=int, help="Bookmark ID")
-
-    search_p = subparsers.add_parser("search", help="Search bookmarks")
-    search_p.add_argument("query", help="Search term")
-
-    del_p = subparsers.add_parser("delete", help="Delete a bookmark")
-    del_p.add_argument("id", type=int, help="Bookmark ID")
-
-    subparsers.add_parser("commands", help="Show all commands with arguments")
-    subparsers.add_parser("menu", help="Start interactive menu")
-
-    args = parser.parse_args()
-
-    if not args.command:
+    if not args.command or args.command == "menu":
         interactive_menu()
         return
 
-    if args.command == "commands":
-        print_detailed_commands()
-        return
-
-    if args.command == "menu":
-        interactive_menu()
+    if args.command == "help":
+        if args.subcommand:
+            sub = subparsers.choices.get(args.subcommand)
+            if sub:
+                sub.print_help()
+            else:
+                available = ", ".join(sorted(cmd for cmd in subparsers.choices.keys() if cmd != "help"))
+                print(f"Unknown command '{args.subcommand}'.")
+                print(f"Available commands: {available}\n")
+                parser.print_help()
+                sys.exit(2)
+        else:
+            parser.print_help()
         return
 
     if args.command == "add":

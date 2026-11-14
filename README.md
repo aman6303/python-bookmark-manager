@@ -9,7 +9,7 @@ Built with **only the Python standard library** (uses `webbrowser` to open links
 - Tags and categories
 - Opens links in your default browser
 - Interactive menu + direct commands
-- Pure standard library
+- Uses pure standard library
 
 ## Project Structure
 
@@ -54,17 +54,30 @@ Other options: `python -m venv .venv`, Poetry, or conda.
 
 Two ways of working:
 
-1. **Interactive menu** (best for beginners)
+1. **Interactive menu** 
    ```bash
    python -m bookmarks.main
+   ```
+   or
+   ```bash
+   python -m bookmarks.main menu
    ```
 
 2. **Direct commands**
 
-```bash
-# Show all commands + required arguments
-python -m bookmarks.main commands
-```
+   ```bash
+   # Show general help and list all commands
+   python -m bookmarks.main help
+   # or: python -m bookmarks.main --help
+
+   # Get help for a specific command
+   python -m bookmarks.main help add
+   # or: python -m bookmarks.main -help add
+   # or: python -m bookmarks.main add --help
+
+   python -m bookmarks.main help delete
+   # or: python -m bookmarks.main -help delete
+   ```
 
 ### Examples
 
@@ -87,18 +100,27 @@ python -m bookmarks.main delete 1
 
 ## Running Tests
 
+Run the full test suite using Python's built-in `unittest`:
+
 ```bash
-python -m unittest tests/test_bookmarks.py
+# Run all tests
+python -m unittest discover -s tests
 ```
 
-## Teaching Notes
+> **Note:** If you haven't installed the package in editable mode (`pip install -e .`), prefix with `PYTHONPATH=src`:
+> ```bash
+> PYTHONPATH=src python -m unittest discover -s tests
+> ```
 
-Demonstrates:
-- SQLite storage
-- Using the `webbrowser` standard library module
-- Search across multiple fields
-- Interactive menu + subcommand CLI
-- Clean project structure
+You can also run individual test files:
+
+```bash
+# Core logic & database tests
+python -m unittest tests/test_bookmarks.py
+
+# CLI arguments & help command tests
+python -m unittest tests/test_cli.py
+```
 
 ## License
 
