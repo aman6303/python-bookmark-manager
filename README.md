@@ -11,6 +11,14 @@ Built with **only the Python standard library** (uses `webbrowser` to open links
 - Interactive menu + direct commands
 - Uses pure standard library
 
+## Demo
+### 1. Interactive simulation (CLI)
+
+![Local Bookmark Manager CLI Demo](assets/interactive_simulation.png)
+
+### 2. Direct via commands simulation (CLI)
+
+![Local Bookmark Manager CLI Demo](assets/direct_simulation.png)
 ## Project Structure
 
 ```
